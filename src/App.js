@@ -147,8 +147,8 @@ const guessCategory = (desc, allIncome, allExpense) => {
 const parsePDFText = (text, allIncome, allExpense) => {
   const lines = text.split("\n").map(l=>l.trim()).filter(Boolean);
   const txns = [];
-  const dateRe = /(\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{2,4}|\d{4}[\/\-\.]\d{2}[\/\-\.]\d{2})/;
-  const amtRe = /(-?R?\s?[\d,]+\.?\d{0,2})/g;
+  const dateRe = /(\d{1,2}[/\-.]\d{1,2}[/\-.]\d{2,4}|\d{4}[/\-.]\d{2}[/\-.]\d{2})/;
+  const amtRe = /(-?R?\s?[\d,]+[.]?\d{0,2})/g;
   lines.forEach(line => {
     const dateMatch = line.match(dateRe);
     if (!dateMatch) return;
