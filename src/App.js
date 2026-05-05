@@ -384,24 +384,30 @@ export default function BudgetTracker() {
   };
 
   // ── Category Row ─────────────────────────────────────────────────────────────
-  const CatRow = ({item, type, budgetVal, onBudget}) => {
-    const isEd = editingId===item.id;
+  const CatRow = ({item, type, budgetVal, onBudget, isEd, onStartEdit, onCommit, onEscEdit, editVal, onEditVal, isMob, onDelete}) => {
+    const [localVal, setLocalVal] = useState(String(budgetVal||""));
+    useEffect(()=>{ setLocalVal(String(budgetVal||"")); },[budgetVal]);
     return (
       <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:9}}>
         {isEd ? (
-          <input autoFocus value={editingVal} onChange={e=>setEditingVal(e.target.value)}
-            onBlur={()=>commitRename(type,item.id,item.name)}
-            onKeyDown={e=>{if(e.key==="Enter")commitRename(type,item.id,item.name);if(e.key==="Escape")setEditingId(null);}}
+          <input autoFocus value={editVal} onChange={e=>onEditVal(e.target.value)}
+            onBlur={onCommit} onKeyDown={e=>{if(e.key==="Enter")onCommit();if(e.key==="Escape")onEscEdit();}}
             style={{flex:1,background:P.bg,border:`1px solid ${P.accent}`,borderRadius:6,padding:"4px 8px",color:P.text,fontSize:12,fontFamily:"inherit",outline:"none"}}/>
         ):(
-          <span onClick={()=>{setEditingId(item.id);setEditingVal(item.name);}} style={{flex:1,fontSize:12,color:P.muted,cursor:"pointer"}}>{item.name}</span>
+          <span onClick={onStartEdit} style={{flex:1,fontSize:12,color:P.muted,cursor:"pointer"}}>{item.name}</span>
         )}
-        <div style={s.amtBox}>
+        <div style={{display:"flex",alignItems:"center",gap:4,background:P.bg,border:`1px solid ${P.border}`,borderRadius:8,padding:"5px 10px"}}>
           <span style={{color:P.muted,fontSize:11}}>R</span>
-          <input type="text" inputMode="decimal" value={budgetVal||""} onChange={e=>{const v=e.target.value.replace(/[^0-9.]/g,"");onBudget(item.name,v);}} style={{...s.input,width:isMobile?70:90,fontSize:12}}/>
+          <input
+            type="text" inputMode="decimal"
+            value={localVal}
+            onChange={e=>{ const v=e.target.value.replace(/[^0-9.]/g,""); setLocalVal(v); }}
+            onBlur={()=>{ onBudget(item.name, localVal); }}
+            style={{background:"none",border:"none",outline:"none",color:P.text,fontFamily:"inherit",textAlign:"right",width:isMob?70:90,fontSize:12}}
+          />
         </div>
-        <button onClick={()=>{setEditingId(item.id);setEditingVal(item.name);}} style={{background:"none",border:"none",cursor:"pointer",fontSize:12,padding:"2px 3px"}}>✏️</button>
-        <button onClick={()=>deleteItem(type,item.id,item.name)} style={{background:"none",border:"none",cursor:"pointer",fontSize:12,padding:"2px 3px"}}>🗑</button>
+        <button onClick={onStartEdit} style={{background:"none",border:"none",cursor:"pointer",fontSize:12,padding:"2px 3px"}}>✏️</button>
+        <button onClick={onDelete} style={{background:"none",border:"none",cursor:"pointer",fontSize:12,padding:"2px 3px"}}>🗑</button>
       </div>
     );
   };
@@ -497,7 +503,13 @@ export default function BudgetTracker() {
                   {items.map(item=>(
                     <CatRow key={item.id} item={item} type={type}
                       budgetVal={showYTD?ytdMonths.reduce((s,m)=>(s+(getBudget(m)[item.name]||0)),0):getBudget(selectedMonth)[item.name]}
-                      onBudget={showYTD?(name,val)=>{ytdMonths.forEach(m=>setBudgetVal(m,name,(parseFloat(val)||0)/ytdMonths.length));}:(name,val)=>setBudgetVal(selectedMonth,name,val)}/>
+                      onBudget={showYTD?(name,val)=>{ytdMonths.forEach(m=>setBudgetVal(m,name,(parseFloat(val)||0)/ytdMonths.length));}:(name,val)=>setBudgetVal(selectedMonth,name,val)}
+                      isEd={editingId===item.id} editVal={editingVal} onEditVal={setEditingVal}
+                      onStartEdit={()=>{setEditingId(item.id);setEditingVal(item.name);}}
+                      onCommit={()=>commitRename(type,item.id,item.name)}
+                      onEscEdit={()=>setEditingId(null)}
+                      onDelete={()=>deleteItem(type,item.id,item.name)}
+                      isMob={isMobile}/>
                   ))}
                   <button className="add-btn" onClick={()=>addItem(type)}>+ ADD {type.toUpperCase()} LINE</button>
                   <div style={{borderTop:`1px solid ${P.border}`,marginTop:10,paddingTop:10,display:"flex",justifyContent:"space-between"}}>
@@ -516,18 +528,28 @@ export default function BudgetTracker() {
             <div style={s.card}>
               <div style={{...s.sectionTitle,color:P.accent}}>Manual Actual Entry — {showYTD?`YTD (Jan–${MONTHS[selectedMonth]})`:MONTHS[selectedMonth]}</div>
               <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"1fr 1fr",gap:10}}>
-                {allCats.map(cat=>(
-                  <div key={cat} style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:8}}>
-                    <span style={{fontSize:12,color:allIncomeCats.includes(cat)?P.green:P.muted,flex:1,minWidth:0,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{cat}</span>
-                    <div style={s.amtBox}>
-                      <span style={{color:P.muted,fontSize:11}}>R</span>
-                      <input type="text" inputMode="decimal" value={showYTD?ytdMonths.reduce((s,m)=>(s+(getActuals(m)[cat]||0)),0):getActuals(selectedMonth)[cat]||""}
-                        onChange={e=>{ if(!showYTD){ const v=e.target.value.replace(/[^0-9.]/g,""); setActualVal(selectedMonth,cat,v); }}}
-                        readOnly={showYTD}
-                        style={{...s.input,width:isMobile?80:100,fontSize:13,opacity:showYTD?0.5:1}}/>
-                    </div>
-                  </div>
-                ))}
+                {allCats.map(cat=>{
+                  const ActualInput = () => {
+                    const stored = showYTD ? ytdMonths.reduce((s,m)=>(s+(getActuals(m)[cat]||0)),0) : getActuals(selectedMonth)[cat]||0;
+                    const [local, setLocal] = useState(String(stored||));
+                    useEffect(()=>setLocal(String(stored||)),[stored]);
+                    return (
+                      <div style={{display:flex,alignItems:center,justifyContent:space-between,gap:8}}>
+                        <span style={{fontSize:12,color:allIncomeCats.includes(cat)?P.green:P.muted,flex:1,minWidth:0,overflow:hidden,textOverflow:ellipsis,whiteSpace:nowrap}}>{cat}</span>
+                        <div style={s.amtBox}>
+                          <span style={{color:P.muted,fontSize:11}}>R</span>
+                          <input type=text inputMode=decimal
+                            value={local}
+                            onChange={e=>{ if(!showYTD){ const v=e.target.value.replace(/[^0-9.]/g,); setLocal(v); }}}
+                            onBlur={()=>{ if(!showYTD) setActualVal(selectedMonth,cat,local); }}
+                            readOnly={showYTD}
+                            style={{background:none,border:none,outline:none,color:P.text,fontFamily:inherit,textAlign:right,width:isMobile?80:100,fontSize:13,opacity:showYTD?0.5:1}}/>
+                        </div>
+                      </div>
+                    );
+                  };
+                  return <ActualInput key={cat}/>;
+                })}
               </div>
             </div>
 
