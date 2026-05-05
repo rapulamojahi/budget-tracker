@@ -398,7 +398,7 @@ export default function BudgetTracker() {
         )}
         <div style={s.amtBox}>
           <span style={{color:P.muted,fontSize:11}}>R</span>
-          <input type="number" value={budgetVal||""} onChange={e=>onBudget(item.name,e.target.value)} style={{...s.input,width:isMobile?70:90,fontSize:12}}/>
+          <input type="text" inputMode="decimal" value={budgetVal||""} onChange={e=>{const v=e.target.value.replace(/[^0-9.]/g,"");onBudget(item.name,v);}} style={{...s.input,width:isMobile?70:90,fontSize:12}}/>
         </div>
         <button onClick={()=>{setEditingId(item.id);setEditingVal(item.name);}} style={{background:"none",border:"none",cursor:"pointer",fontSize:12,padding:"2px 3px"}}>✏️</button>
         <button onClick={()=>deleteItem(type,item.id,item.name)} style={{background:"none",border:"none",cursor:"pointer",fontSize:12,padding:"2px 3px"}}>🗑</button>
@@ -453,7 +453,7 @@ export default function BudgetTracker() {
         @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Syne:wght@700;800&display=swap');
         *{box-sizing:border-box;margin:0;padding:0;}
         ::-webkit-scrollbar{width:4px;} ::-webkit-scrollbar-track{background:#0a0a0f;} ::-webkit-scrollbar-thumb{background:#252535;border-radius:2px;}
-        input[type=number]{-moz-appearance:textfield;} input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;}
+        
         select option{background:#18181f;}
         .tab-btn{background:none;border:none;cursor:pointer;font-family:inherit;transition:all 0.2s;white-space:nowrap;}
         .tab-btn:hover{color:#fff;}
@@ -521,8 +521,8 @@ export default function BudgetTracker() {
                     <span style={{fontSize:12,color:allIncomeCats.includes(cat)?P.green:P.muted,flex:1,minWidth:0,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{cat}</span>
                     <div style={s.amtBox}>
                       <span style={{color:P.muted,fontSize:11}}>R</span>
-                      <input type="number" value={showYTD?ytdMonths.reduce((s,m)=>(s+(getActuals(m)[cat]||0)),0):getActuals(selectedMonth)[cat]||""}
-                        onChange={e=>{ if(!showYTD) setActualVal(selectedMonth,cat,e.target.value); }}
+                      <input type="text" inputMode="decimal" value={showYTD?ytdMonths.reduce((s,m)=>(s+(getActuals(m)[cat]||0)),0):getActuals(selectedMonth)[cat]||""}
+                        onChange={e=>{ if(!showYTD){ const v=e.target.value.replace(/[^0-9.]/g,""); setActualVal(selectedMonth,cat,v); }}}
                         readOnly={showYTD}
                         style={{...s.input,width:isMobile?80:100,fontSize:13,opacity:showYTD?0.5:1}}/>
                     </div>
